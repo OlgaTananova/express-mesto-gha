@@ -1,16 +1,9 @@
 const User = require('../models/user');
-const { ERR_NOT_FOUND, ERR_SERVER_ERROR, ERR_INCORRECT_DATA } = require('../utils');
+const {
+  ERR_NOT_FOUND, ERR_INCORRECT_DATA, ERR_SERVER_ERROR, throwErrors,
+} = require('../utils');
 
-const throwErrors = (err, res) => {
-  if (err.name === 'ValidationError') {
-    res.status(ERR_INCORRECT_DATA).send({ message: `Ошибка, статус ${ERR_INCORRECT_DATA}. Переданы некорректные данные.` });
-  } else if (err.name === 'CastError') {
-    res.status(ERR_INCORRECT_DATA).send({ message: `Ошибка, статус ${ERR_INCORRECT_DATA}. Пользователь с указанным id не найдет.` });
-  } else {
-    res.status(ERR_SERVER_ERROR)
-      .send({ message: `Ошибка ${ERR_SERVER_ERROR}. Ошибка сервера.` });
-  }
-};
+const message = 'Пользователь с указанным id не найден';
 
 const getUsers = (req, res) => {
   User.find({})
@@ -28,12 +21,12 @@ const getUserById = (req, res) => {
     .then((user) => {
       if (!user) {
         return res.status(ERR_NOT_FOUND)
-          .send({ message: `Ошибка ${ERR_NOT_FOUND}. Пользователь по указанному _id не найден.` });
+          .send({ message: `Ошибка ${ERR_NOT_FOUND}. ${message}.` });
       }
       res.send(user);
     })
     .catch((err) => {
-      throwErrors(err, res);
+      throwErrors(err, res, message);
     });
 };
 const createUser = (req, res) => {
@@ -51,7 +44,7 @@ const createUser = (req, res) => {
       res.send(user);
     })
     .catch((err) => {
-      throwErrors(err, res);
+      throwErrors(err, res, message);
     });
 };
 const updateUserProfile = (req, res) => {
@@ -63,7 +56,7 @@ const updateUserProfile = (req, res) => {
   if (!name || !about) {
     return res.status(ERR_INCORRECT_DATA).send({ message: `Ошибка, статус ${ERR_INCORRECT_DATA}. Переданы некорректные данные.` });
   }
-  User.findOneAndUpdate(id, {
+  User.findByIdAndUpdate(id, {
     name,
     about,
   }, {
@@ -75,7 +68,7 @@ const updateUserProfile = (req, res) => {
     })
     .catch((err) => {
       console.log(err);
-      throwErrors(err, res);
+      throwErrors(err, res, message);
     });
 };
 const updateUserAvatar = (req, res) => {
@@ -84,12 +77,12 @@ const updateUserAvatar = (req, res) => {
   if (!avatar) {
     return res.status(ERR_INCORRECT_DATA).send({ message: `Ошибка, статус ${ERR_INCORRECT_DATA}. Переданы некорректные данные.` });
   }
-  User.findOneAndUpdate(id, { avatar }, { new: true, runValidators: true })
+  User.findByIdAndUpdate(id, { avatar }, { new: true, runValidators: true })
     .then((user) => {
       res.send(user);
     })
     .catch((err) => {
-      throwErrors(err, res);
+      throwErrors(err, res, message);
     });
 };
 

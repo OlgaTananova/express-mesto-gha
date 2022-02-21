@@ -1,16 +1,7 @@
 const Card = require('../models/card');
-const { ERR_INCORRECT_DATA, ERR_SERVER_ERROR, ERR_NOT_FOUND } = require('../utils');
+const { ERR_NOT_FOUND, throwErrors } = require('../utils');
 
-const throwErrors = (err, res) => {
-  if (err.name === 'ValidationError') {
-    res.status(ERR_INCORRECT_DATA).send({ message: `Ошибка, статус ${ERR_INCORRECT_DATA}. Переданы некорректные данные.` });
-  } else if (err.name === 'CastError') {
-    res.status(ERR_INCORRECT_DATA).send({ message: `Ошибка, статус ${ERR_INCORRECT_DATA}. Карточка с указанным id не найдена.` });
-  } else {
-    res.status(ERR_SERVER_ERROR)
-      .send({ message: `Ошибка ${ERR_SERVER_ERROR}. Ошибка сервера.` });
-  }
-};
+const message = 'Карточка с указанным id не найдена';
 
 const getCards = (req, res) => {
   Card.find({})
@@ -18,7 +9,7 @@ const getCards = (req, res) => {
       res.send(cards);
     })
     .catch((err) => {
-      throwErrors(err, res);
+      throwErrors(err, res, message);
     });
 };
 
@@ -30,7 +21,7 @@ const createCard = (req, res) => {
       res.send(card);
     })
     .catch((err) => {
-      throwErrors(err, res);
+      throwErrors(err, res, message);
     });
 };
 
@@ -39,12 +30,12 @@ const deleteCard = (req, res) => {
   Card.findByIdAndRemove(cardId)
     .then((card) => {
       if (!card) {
-        return res.status(ERR_NOT_FOUND).send({ message: `Ошибка статус ${ERR_NOT_FOUND}. Карточка с указанным id не найдена.` });
+        return res.status(ERR_NOT_FOUND).send({ message: `Ошибка статус ${ERR_NOT_FOUND}. ${message}.` });
       }
       res.send({ message: 'Пост удален.' });
     })
     .catch((err) => {
-      throwErrors(err, res);
+      throwErrors(err, res, message);
     });
 };
 
@@ -57,12 +48,12 @@ const likeCard = (req, res) => {
   )
     .then((card) => {
       if (!card) {
-        return res.status(ERR_NOT_FOUND).send({ message: `Ошибка, статус ${ERR_NOT_FOUND}. Карточка с указанным id не найдена.` });
+        return res.status(ERR_NOT_FOUND).send({ message: `Ошибка, статус ${ERR_NOT_FOUND}. ${message}.` });
       }
       res.send(card);
     })
     .catch((err) => {
-      throwErrors(err, res);
+      throwErrors(err, res, message);
     });
 };
 
@@ -71,12 +62,12 @@ const dislikeCard = (req, res) => {
   Card.findByIdAndUpdate(cardId, { $pull: { likes: req.user._id } }, { new: true })
     .then((card) => {
       if (!card) {
-        return res.status(ERR_NOT_FOUND).send({ message: `Ошибка, статус ${ERR_NOT_FOUND}. Карточка с указанным id не найдена.` });
+        return res.status(ERR_NOT_FOUND).send({ message: `Ошибка, статус ${ERR_NOT_FOUND}. ${message}.` });
       }
       res.send(card);
     })
     .catch((err) => {
-      throwErrors(err, res);
+      throwErrors(err, res, message);
     });
 };
 module.exports = {

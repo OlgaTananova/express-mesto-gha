@@ -12,9 +12,9 @@
     - созданы схемы и модели двух сущностей - пользователя и карточки.
     - настроены роуты для обработки запросов на пользователя и карточку. 
 
-[![Tests for sprint 13](https://github.com/${OlgaTananova}/${express-mesto-gha}/actions/workflows/tests-13-sprint.yml/badge.svg)](https://github.com/${OlgaTananova}/${express-mesto-gha}/actions/workflows/tests-13-sprint.yml)
+[![Tests for sprint 13](https://github.com/olgatananova/express-mesto-gha/actions/workflows/tests-13-sprint.yml/badge.svg)](https://github.com/olgatananova/express-mesto-gha/actions/workflows/tests-13-sprint.yml)
 
-[![Tests for sprint 14](https://github.com/${OlgaTananova}/${express-mesto-gha}/actions/workflows/tests-14-sprint.yml/badge.svg)](https://github.com/${OlgaTananova}/${express-mesto-gha}/actions/workflows/tests-14-sprint.yml)
+[![Tests for sprint 14](https://github.com/olgatananova/express-mesto-gha/actions/workflows/tests-14-sprint.yml/badge.svg)](https://github.com/olgatananova/express-mesto-gha/actions/workflows/tests-14-sprint.yml)
 
 TBC
 Ольга Тананова

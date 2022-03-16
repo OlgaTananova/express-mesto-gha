@@ -1,11 +1,22 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const { ERR_NOT_FOUND } = require('./utils');
+const cookieParser = require('cookie-parser');
+const {
+  celebrate, Joi, isCelebrateError,
+} = require('celebrate');
+const NotFoundError = require('./errors/NotFoundError');
+const {
+  ERR_CONFLICT_ERROR,
+  ERR_INCORRECT_DATA,
+  ERR_SERVER_ERROR,
+} = require('./utils');
 
 const app = express();
 const { PORT = 3000 } = process.env;
 const userRouter = require('./routes/users');
 const cardRouter = require('./routes/cards');
+const login = require('./controllers/login');
+const { createUser } = require('./controllers/users');
 
 async function start() {
   await mongoose.connect('mongodb://localhost:27017/mestodb', {
@@ -23,16 +34,47 @@ start()
   .then(() => {
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
-    app.use((req, res, next) => {
-      req.user = {
-        _id: '620df1b1cb85a61cb0bd27ac',
-      };
-      next();
+    app.use(cookieParser());
+    app.get('/', (req, res) => {
+      throw new NotFoundError('Страница не найдена.');
     });
+    app.post('/signin', login);
+    app.post('/signup', celebrate({
+      body: Joi.object().keys({
+        name: Joi.string()
+          .min(2)
+          .max(30),
+        about: Joi.string()
+          .min(2)
+          .max(30),
+        avatar: Joi.string(),
+        email: Joi.string().required().email(),
+        password: Joi.string().required(),
+      }),
+    }), createUser);
     app.use(userRouter);
     app.use(cardRouter);
-    app.use('/', (req, res) => {
-      res.status(ERR_NOT_FOUND).send({ message: `Ошибка статус ${ERR_NOT_FOUND}. Страница не найдена.` });
+    app.use((err, req, res, next) => {
+      if (isCelebrateError(err)) {
+        return res.status(ERR_INCORRECT_DATA).send({ message: 'Переданы некорректные данные.' });
+      }
+      next(err);
+    });
+    app.use((err, req, res, next) => {
+      let { statusCode, message } = err;
+      if (statusCode && message) {
+        return res.status(statusCode).send({ message });
+      } if (err.code === 11000) {
+        statusCode = ERR_CONFLICT_ERROR;
+        message = 'Такой пользователь уже существует!';
+      } else if (err.name === 'ValidationError' || err.name === 'CastError') {
+        statusCode = ERR_INCORRECT_DATA;
+        message = 'Переданы некорректные данные';
+      } else {
+        statusCode = ERR_SERVER_ERROR;
+        message = 'На сервере произошла ошибка';
+      }
+      res.status(statusCode).send({ message });
     });
   })
   .catch(() => {

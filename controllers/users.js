@@ -1,60 +1,77 @@
+const bcrypt = require('bcryptjs');
+const NotFoundError = require('../errors/NotFoundError');
+const IncorrectDataError = require('../errors/IncorrectDataError');
+
 const User = require('../models/user');
-const {
-  ERR_NOT_FOUND, ERR_INCORRECT_DATA, ERR_SERVER_ERROR, throwErrors,
-} = require('../utils');
 
-const message = 'Пользователь с указанным id не найден';
-
-const getUsers = (req, res) => {
+const getUsers = (req, res, next) => {
   User.find({})
     .then((users) => {
+      if (!users) {
+        throw new NotFoundError('Пользователи не найдены.');
+      }
       res.send(users);
     })
-    .catch(() => {
-      res.status(ERR_SERVER_ERROR)
-        .send({ message: `Ошибка ${ERR_SERVER_ERROR}. Ошибка сервера.` });
+    .catch((err) => {
+      next(err);
     });
 };
-const getUserById = (req, res) => {
+const getUserById = (req, res, next) => {
   const { id } = req.params;
   User.findById(id)
     .then((user) => {
       if (!user) {
-        return res.status(ERR_NOT_FOUND)
-          .send({ message: `Ошибка ${ERR_NOT_FOUND}. ${message}.` });
+        throw new NotFoundError('Пользователь с таким id не найден.');
       }
       res.send(user);
     })
     .catch((err) => {
-      throwErrors(err, res, message);
+      next(err);
     });
 };
-const createUser = (req, res) => {
+
+const getCurrentUser = (req, res, next) => {
+  const id = req.user._id;
+  User.findById(id)
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Невозможно отобразить информацию о пользователе, возможно, нужна авторизация.')
+      }
+      res.send({ user });
+    })
+    .catch((err) => {
+      next(err);
+    });
+};
+const createUser = async (req, res, next) => {
   const {
     name,
     about,
     avatar,
+    email,
+    password,
   } = req.body;
-  User.create({
-    name,
-    about,
-    avatar,
-  })
-    .then((user) => {
-      res.send(user);
-    })
-    .catch((err) => {
-      throwErrors(err, res, message);
-    });
+
+  bcrypt.hash(password, 10)
+    .then((hash) => User.create({
+      name,
+      about,
+      avatar,
+      email,
+      password: hash,
+    }))
+    .then((user) => res.send(user))
+    .catch((err) => next(err));
 };
-const updateUserProfile = (req, res) => {
+
+const updateUserProfile = (req, res, next) => {
   const {
     name,
     about,
   } = req.body;
   const id = req.user._id;
   if (!name || !about) {
-    return res.status(ERR_INCORRECT_DATA).send({ message: `Ошибка, статус ${ERR_INCORRECT_DATA}. Переданы некорректные данные.` });
+    throw new IncorrectDataError('Переданы некорректные данные для обновления данных пользователя.');
   }
   User.findByIdAndUpdate(id, {
     name,
@@ -66,23 +83,20 @@ const updateUserProfile = (req, res) => {
     .then((user) => {
       res.send(user);
     })
-    .catch((err) => {
-      console.log(err);
-      throwErrors(err, res, message);
-    });
+    .catch((err) => next(err));
 };
-const updateUserAvatar = (req, res) => {
+const updateUserAvatar = (req, res, next) => {
   const { avatar } = req.body;
   const id = req.user._id;
   if (!avatar) {
-    return res.status(ERR_INCORRECT_DATA).send({ message: `Ошибка, статус ${ERR_INCORRECT_DATA}. Переданы некорректные данные.` });
+    throw new IncorrectDataError('Переданы некорректные данные для обновления аватара.');
   }
   User.findByIdAndUpdate(id, { avatar }, { new: true, runValidators: true })
     .then((user) => {
       res.send(user);
     })
     .catch((err) => {
-      throwErrors(err, res, message);
+      next(err);
     });
 };
 
@@ -92,4 +106,5 @@ module.exports = {
   getUserById,
   updateUserProfile,
   updateUserAvatar,
+  getCurrentUser,
 };

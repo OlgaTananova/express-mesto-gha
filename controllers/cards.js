@@ -1,5 +1,7 @@
 const Card = require('../models/card');
+
 const NotFoundError = require('../errors/NotFoundError');
+const ForbiddenError = require('../errors/ForbiddenError');
 
 const getCards = (req, res, next) => {
   Card.find({})
@@ -31,7 +33,7 @@ const deleteCard = (req, res, next) => {
       if (!card) {
         throw new NotFoundError('Карточка с таким id не найдена.');
       } else if (card.deletedCount === 0) {
-        throw new NotFoundError('Карточка уже удалена или у вас нет прав на ее удаление.');
+        throw new ForbiddenError('Карточка уже удалена или у вас нет прав на ее удаление.');
       }
       res.send({ message: 'Пост удален.' });
     })

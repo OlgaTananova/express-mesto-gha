@@ -11,6 +11,10 @@
     - написан простой сервер, который может обрабатывать запросы CRUD.
     - созданы схемы и модели двух сущностей - пользователя и карточки.
     - настроены роуты для обработки запросов на пользователя и карточку. 
+    - реализована авторизация пользователей.
+    - роуты с контентом защищены авторизацией.
+    - входящие данные валидируются (при помощи библиотек Joi, celebrate), а также на уровне схем.
+
 
 [![Tests for sprint 13](https://github.com/olgatananova/express-mesto-gha/actions/workflows/tests-13-sprint.yml/badge.svg)](https://github.com/olgatananova/express-mesto-gha/actions/workflows/tests-13-sprint.yml)
 

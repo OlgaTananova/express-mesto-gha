@@ -12,8 +12,8 @@ const auth = require('../middleware/auth');
 const router = Router();
 
 router.get('/users', auth, getUsers);
-router.get('/users/:id', auth, getUserById);
 router.get('/users/me', auth, getCurrentUser);
+router.get('/users/:id', auth, getUserById);
 router.patch('/users/me', auth, celebrate({
   body: Joi.object().keys({
     name: Joi.string().required().min(2).max(30),

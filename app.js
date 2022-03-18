@@ -1,10 +1,9 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const cookieParser = require('cookie-parser');
 const {
   celebrate, Joi, isCelebrateError,
 } = require('celebrate');
-const NotFoundError = require('./errors/NotFoundError');
+const cookieParser = require('cookie-parser');
 const {
   ERR_CONFLICT_ERROR,
   ERR_INCORRECT_DATA,
@@ -36,7 +35,7 @@ start()
     app.use(express.urlencoded({ extended: true }));
     app.use(cookieParser());
     app.get('/', (req, res) => {
-      throw new NotFoundError('Страница не найдена.');
+      res.send({ message: 'Это главная страница' });
     });
     app.post('/signin', login);
     app.post('/signup', celebrate({
@@ -60,7 +59,7 @@ start()
       }
       next(err);
     });
-    app.use((err, req, res, next) => {
+    app.use((err, req, res) => {
       let { statusCode, message } = err;
       if (statusCode && message) {
         return res.status(statusCode).send({ message });

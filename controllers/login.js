@@ -10,6 +10,7 @@ const login = (req, res, next) => {
         httpOnly: true,
         maxAge: 6.048e+8,
       });
+      res.send({ message: 'Токен отправлен в куки.' });
     })
     .catch((err) => {
       next(err);

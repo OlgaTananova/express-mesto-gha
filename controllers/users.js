@@ -35,9 +35,9 @@ const getCurrentUser = (req, res, next) => {
   User.findById(id)
     .then((user) => {
       if (!user) {
-        throw new NotFoundError('Невозможно отобразить информацию о пользователе, возможно, нужна авторизация.')
+        throw new NotFoundError('Невозможно отобразить информацию о пользователе, возможно, нужна авторизация.');
       }
-      res.send({ user });
+      res.send(user);
     })
     .catch((err) => {
       next(err);

@@ -5,10 +5,10 @@ const {
 } = require('celebrate');
 const cookieParser = require('cookie-parser');
 const {
-  ERR_CONFLICT_ERROR,
-  ERR_INCORRECT_DATA,
+  ERR_BAD_REQUEST,
   ERR_SERVER_ERROR,
 } = require('./utils');
+const NotFoundError = require('./errors/NotFoundError');
 
 const app = express();
 const { PORT = 3000 } = process.env;
@@ -16,6 +16,7 @@ const userRouter = require('./routes/users');
 const cardRouter = require('./routes/cards');
 const login = require('./controllers/login');
 const { createUser } = require('./controllers/users');
+const auth = require('./middleware/auth');
 
 async function start() {
   await mongoose.connect('mongodb://localhost:27017/mestodb', {
@@ -34,10 +35,12 @@ start()
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
     app.use(cookieParser());
-    app.get('/', (req, res) => {
-      res.send({ message: 'Это главная страница' });
-    });
-    app.post('/signin', login);
+    app.post('/signin', celebrate({
+      body: Joi.object().keys({
+        email: Joi.string().email().required(),
+        password: Joi.string().required(),
+      }),
+    }), login);
     app.post('/signup', celebrate({
       body: Joi.object().keys({
         name: Joi.string()
@@ -53,27 +56,21 @@ start()
     }), createUser);
     app.use(userRouter);
     app.use(cardRouter);
+    app.use(auth, (req, res, next) => {
+      next(new NotFoundError('Маршрут не найден'));
+    });
     app.use((err, req, res, next) => {
       if (isCelebrateError(err)) {
-        return res.status(ERR_INCORRECT_DATA).send({ message: 'Переданы некорректные данные.' });
-      }
-      next(err);
-    });
-    app.use((err, req, res) => {
-      let { statusCode, message } = err;
-      if (statusCode && message) {
-        return res.status(statusCode).send({ message });
-      } if (err.code === 11000) {
-        statusCode = ERR_CONFLICT_ERROR;
-        message = 'Такой пользователь уже существует!';
-      } else if (err.name === 'ValidationError' || err.name === 'CastError') {
-        statusCode = ERR_INCORRECT_DATA;
-        message = 'Переданы некорректные данные';
+        res.status(ERR_BAD_REQUEST).send({ message: 'Введены некорректные данные.' });
       } else {
-        statusCode = ERR_SERVER_ERROR;
-        message = 'На сервере произошла ошибка';
+        next(err);
       }
+    });
+    app.use((err, req, res, next) => {
+      const statusCode = err.statusCode || ERR_SERVER_ERROR;
+      const message = statusCode === ERR_SERVER_ERROR ? 'На сервере произошла ошибка.' : err.message;
       res.status(statusCode).send({ message });
+      next();
     });
   })
   .catch(() => {

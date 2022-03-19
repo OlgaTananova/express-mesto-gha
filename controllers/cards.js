@@ -28,18 +28,18 @@ const createCard = (req, res, next) => {
 const deleteCard = (req, res, next) => {
   const { cardId } = req.params;
   const ownerId = req.user._id;
-  Card.deleteOne({ _id: cardId, owner: ownerId })
+  Card.findById(cardId)
+    .orFail(() => next(new NotFoundError('Карточка с указанным id не найдена.')))
     .then((card) => {
-      if (!card) {
-        throw new NotFoundError('Карточка с таким id не найдена.');
-      } else if (card.deletedCount === 0) {
-        throw new ForbiddenError('Карточка уже удалена или у вас нет прав на ее удаление.');
+      if (!card.owner.equals(ownerId)) {
+        return next(new ForbiddenError('Нельзя удалить чужую карточку.'));
       }
-      res.send({ message: 'Пост удален.' });
+      return card.remove()
+        .then(() => {
+          res.send({ message: 'Карточка удалена.' });
+        });
     })
-    .catch((err) => {
-      next(err);
-    });
+    .catch(next);
 };
 
 const likeCard = (req, res, next) => {

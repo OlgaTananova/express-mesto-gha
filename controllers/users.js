@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const NotFoundError = require('../errors/NotFoundError');
-const IncorrectDataError = require('../errors/IncorrectDataError');
+const BadRequestError = require('../errors/BadRequestError');
+const ConflictError = require('../errors/ConflictError');
 
 const User = require('../models/user');
 
@@ -51,8 +52,14 @@ const createUser = async (req, res, next) => {
     email,
     password,
   } = req.body;
-
-  bcrypt.hash(password, 10)
+  User.findOne({ email })
+    .then((user) => {
+      if (user) {
+        throw new ConflictError('Такой пользователь уже существует');
+      } else {
+        return bcrypt.hash(password, 10);
+      }
+    })
     .then((hash) => User.create({
       name,
       about,
@@ -60,8 +67,20 @@ const createUser = async (req, res, next) => {
       email,
       password: hash,
     }))
-    .then((user) => res.send(user))
-    .catch((err) => next(err));
+    .then(() => {
+      res.status(201).send({
+        data: {
+          name, about, avatar, email,
+        },
+      });
+    })
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new BadRequestError('Переданы некорректные данные'));
+      } else {
+        next(err);
+      }
+    });
 };
 
 const updateUserProfile = (req, res, next) => {
@@ -71,7 +90,7 @@ const updateUserProfile = (req, res, next) => {
   } = req.body;
   const id = req.user._id;
   if (!name || !about) {
-    throw new IncorrectDataError('Переданы некорректные данные для обновления данных пользователя.');
+    throw new BadRequestError('Переданы некорректные данные для обновления данных пользователя.');
   }
   User.findByIdAndUpdate(id, {
     name,
@@ -89,7 +108,7 @@ const updateUserAvatar = (req, res, next) => {
   const { avatar } = req.body;
   const id = req.user._id;
   if (!avatar) {
-    throw new IncorrectDataError('Переданы некорректные данные для обновления аватара.');
+    throw new BadRequestError('Переданы некорректные данные для обновления аватара.');
   }
   User.findByIdAndUpdate(id, { avatar }, { new: true, runValidators: true })
     .then((user) => {
